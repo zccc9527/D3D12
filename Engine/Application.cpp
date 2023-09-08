@@ -1,4 +1,4 @@
-#include "Application.h"
+﻿#include "Application.h"
 #include "GameTime.h"
 #include <string>
 
@@ -41,10 +41,13 @@ bool Application::InitWindow(HINSTANCE hInstance)
 
 bool Application::InitDirectX()
 {
-	//�����������豸
+	//创建工厂和设备
 	DXCall(CreateDXGIFactory2(0, IID_PPV_ARGS(&pDXGIFactory)));
 	DXCall(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_12_1, IID_PPV_ARGS(&pDevice)));
 	NAME_D3D12_OBJECT(pDevice, L"Main Device");
+
+	//创建命令队列，命令列表，命令分配器
+	CreateCommandObject(D3D12_COMMAND_LIST_TYPE_DIRECT);
 
 	return true;
 }
@@ -56,8 +59,8 @@ bool Application::Run()
 	{
 		if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
 		{
-			TranslateMessage(&msg); //������Ϣ
-			DispatchMessage(&msg);  //ת������Ϣ��������
+			TranslateMessage(&msg); //翻译消息
+			DispatchMessage(&msg);  //转发给消息处理函数
 		}
 		else
 		{
@@ -72,6 +75,39 @@ bool Application::Run()
 	return (int)msg.wParam;
 }
 
+void Application::CreateCommandObject(D3D12_COMMAND_LIST_TYPE CommandListType)
+{
+	//创建命令队列，需要一个描述结构来定义要什么样的命令队列
+	D3D12_COMMAND_QUEUE_DESC commandQueueDesc = {};
+	commandQueueDesc.NodeMask = 0;
+	commandQueueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
+	commandQueueDesc.Type = CommandListType;  //命令列表的类型
+	commandQueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+	DXCall(pDevice->CreateCommandQueue(&commandQueueDesc, IID_PPV_ARGS(&pCommandQueue)));
+	NAME_D3D12_OBJECT(pCommandQueue, CommandListType == D3D12_COMMAND_LIST_TYPE_DIRECT ? L"Direct Command Queue" : CommandListType == D3D12_COMMAND_LIST_TYPE_COMPUTE ? L"Compute Command Queue" : L"Command Queue");
+
+	for (uint32_t i = 0; i < Engine::frame_buffer_count; i++)
+	{
+		//创建命令分配器
+		CommandFrame& frame{ command_frame[i] };
+		DXCall(pDevice->CreateCommandAllocator(CommandListType, IID_PPV_ARGS(&frame.pCommandAllocator)));
+		NAME_D3D12_OBJECT_Indexed(frame.pCommandAllocator, i, CommandListType == D3D12_COMMAND_LIST_TYPE_DIRECT ? L"Direct Command Allocator" : CommandListType == D3D12_COMMAND_LIST_TYPE_COMPUTE ? L"Compute Command Allocator" : L"Command Allocator");
+	}
+
+	//创建命令列表
+	DXCall(pDevice->CreateCommandList(
+		0, //掩码值为0，单GPU
+		CommandListType, //命令列表类型
+		command_frame[0].pCommandAllocator,	//命令分配器指针
+		nullptr,						//渲染流水线状态对象PSO(pipeline state object),这里不绘制为nullptr
+		IID_PPV_ARGS(&pCommandList)
+	));
+	NAME_D3D12_OBJECT(pCommandList, CommandListType == D3D12_COMMAND_LIST_TYPE_DIRECT ? L"Direct Command List" : CommandListType == D3D12_COMMAND_LIST_TYPE_COMPUTE ? L"Compute Command List" : L"Command List");
+
+	//首先需要重置命令列表，因为在第一次引用命令列表时需要对它进行重置，而重置前必须先关闭
+	DXCall(pCommandList->Close());
+}
+
 LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	return Application::Get()->WndProc(hWnd, msg, wParam, lParam);
@@ -81,7 +117,7 @@ LRESULT CALLBACK Application::WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM
 {
 	switch (msg)
 	{
-		//����ʱ
+		//创建时
 	case WM_CREATE:
 	{
 		break;
@@ -125,7 +161,7 @@ bool Application::RegisterWindow(HINSTANCE hInstance)
 	ATOM WindowId = RegisterClassEx(&wcex);
 	if (!WindowId)
 	{
-		MessageBox(NULL, L"ע�ᴰ��ʧ��!", L"Error", MB_OK | MB_ICONSTOP);
+		MessageBox(NULL, L"注册窗口失败!", L"Error", MB_OK | MB_ICONSTOP);
 		return false;
 	}
 	return true;
@@ -141,7 +177,7 @@ bool Application::CreateMyWindow(HINSTANCE hInstance)
 	HWND hWnd = CreateWindowEx(WS_EX_OVERLAPPEDWINDOW, L"MyWindowClass", L"Engine", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, width, height, NULL, NULL, hInstance, NULL);
 	if (!hWnd)
 	{
-		MessageBox(NULL, L"��������ʧ��!", L"Error", MB_OK | MB_ICONSTOP);
+		MessageBox(NULL, L"创建窗口失败!", L"Error", MB_OK | MB_ICONSTOP);
 		return false;
 	}
 	m_hWnd = hWnd;
@@ -154,8 +190,8 @@ void Application::CalculateFrameState()
 
 	if (gameTime && gameTime->GetTotalTime() - timeElapsed >= 1.0f)
 	{
-		float fps = float(mFrameCount); //ÿ�����֡
-		float mspf = 1000.f / fps; //ÿ֡���ٺ���
+		float fps = float(mFrameCount); //每秒多少帧
+		float mspf = 1000.f / fps; //每帧多少毫秒
 
 		std::wstring fpsStr = std::to_wstring(fps);
 		std::wstring mspfStr = std::to_wstring(mspf);

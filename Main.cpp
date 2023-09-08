@@ -1,4 +1,4 @@
-#include <windows.h>
+ï»¿#include <windows.h>
 #include <iostream>
 #include "Application.h"
 
@@ -13,7 +13,7 @@ int CALLBACK WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 	Application* app = Application::Get();
 	if (!app->Init(hInstance))
 	{
-		MessageBox(app->m_hWnd, L"´°¿Ú³õÊ¼»¯Ê§°Ü!", L"Error", MB_OK | MB_ICONSTOP);
+		MessageBox(app->m_hWnd, L"çª—å£åˆå§‹åŒ–å¤±è´¥!", L"Error", MB_OK | MB_ICONSTOP);
 		return 0;
 	}
 	app->Run();

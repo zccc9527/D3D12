@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include <type_traits>
 #include <tuple>
 #include <vector>
@@ -20,7 +20,7 @@ namespace TMP
 	template<typename... Args>
 	constexpr bool is_type_v = is_type<Args...>::value;
 
-	//ÅĞ¶ÏÊÇ·ñÖØÔØÁËÀ¨ºÅÔËËã·û£¬¼´¿ÉÖ´ĞĞ¡£
+	//åˆ¤æ–­æ˜¯å¦é‡è½½äº†æ‹¬å·è¿ç®—ç¬¦ï¼Œå³å¯æ‰§è¡Œã€‚
 	template<typename T, typename... Args>
 	requires (is_type_v<decltype(std::declval<T>()(std::declval<Args>()...))>)
 	struct is_operator
@@ -33,7 +33,7 @@ namespace TMP
 	template<std::size_t... Index>
 	struct Indices {};
 
-	//Éú³ÉIndices<0, 1, ..., N-1> ±àÒëÆ÷³£Á¿ÓÃÓÚstd::get<Index>(tuple);
+	//ç”ŸæˆIndices<0, 1, ..., N-1> ç¼–è¯‘å™¨å¸¸é‡ç”¨äºstd::get<Index>(tuple);
 	template<std::size_t N, std::size_t... args>
 	struct build_index
 	{
@@ -46,7 +46,7 @@ namespace TMP
 	};
 }
 
-//Î¯ÍĞ½Ó¿ÚÀà£¬Ö»°üº¬Ò»¸öExecuteµÄ´¿Ğéº¯Êı
+//å§”æ‰˜æ¥å£ç±»ï¼ŒåªåŒ…å«ä¸€ä¸ªExecuteçš„çº¯è™šå‡½æ•°
 template<typename Ret, typename... Args>
 class IDelegate
 {
@@ -56,7 +56,7 @@ public:
 	virtual Ret Execute(Args... args) = 0;
 };
 
-//ÓÃÒ»¸ö½á¹¹ÌåÀ´Í³Ò»²»Í¬ÀàĞÍµÄÀà³ÉÔ±º¯ÊıÖ¸Õë(constºÍ·Çconst)
+//ç”¨ä¸€ä¸ªç»“æ„ä½“æ¥ç»Ÿä¸€ä¸åŒç±»å‹çš„ç±»æˆå‘˜å‡½æ•°æŒ‡é’ˆ(constå’Œéconst)
 template<bool bConst, class C, typename Ret, typename... Args>
 struct MemberFuncPtr;
 template<class C, typename Ret, typename... Params, typename... Payload>
@@ -70,14 +70,14 @@ struct MemberFuncPtr<true, C, Ret(Params...), Payload...>
 	using type = Ret(C::*)(Params..., Payload...) const;
 };
 
-//Ö»Õë¶ÔÀà³ÉÔ±º¯ÊıÎ¯ÍĞ
+//åªé’ˆå¯¹ç±»æˆå‘˜å‡½æ•°å§”æ‰˜
 template<bool bConst, class C, class Ret, typename... Params>
 class MemberDelegate;
 template<bool bConst, class C, class Ret, typename... Params, typename... Payload>
 class MemberDelegate<bConst, C, Ret(Params...), Payload...> : public IDelegate<Ret, Params...>
 {
 public:
-	using FuncPtr = typename MemberFuncPtr<bConst, C, Ret(Params...), Payload...>::type; //Àà³ÉÔ±º¯ÊıÖ¸Õë
+	using FuncPtr = typename MemberFuncPtr<bConst, C, Ret(Params...), Payload...>::type; //ç±»æˆå‘˜å‡½æ•°æŒ‡é’ˆ
 	MemberDelegate(C* p, FuncPtr func, Payload... payload) : m_p(p), CallBack(func), m_payload(std::make_tuple(payload...)) {}
 
 	virtual Ret Execute(Params... params) override
@@ -133,7 +133,7 @@ class LambdaDelegate<TLambda, Ret(Params...), Payload...> : public IDelegate<Ret
 public:
 	LambdaDelegate(TLambda Lambda, Payload... payload) : m_Lambda(Lambda), m_payload(std::make_tuple(payload...)) 
 	{
-		TMP::is_operator_v<TLambda, Params..., Payload...>; //¼ì²éÀàĞÍÊÇ·ñÕıÈ·
+		TMP::is_operator_v<TLambda, Params..., Payload...>; //æ£€æŸ¥ç±»å‹æ˜¯å¦æ­£ç¡®
 	}
 
 	virtual Ret Execute(Params... params) override
@@ -244,7 +244,7 @@ private:
 	IDelegate<Ret, Params...>* p;
 };
 
-//¶à²¥´úÀí,Ë³ĞòÖ´ĞĞ,¶à²¥´úÀíÃ»ÓĞ·µ»ØÖµ,¶¼ÊÇvoid
+//å¤šæ’­ä»£ç†,é¡ºåºæ‰§è¡Œ,å¤šæ’­ä»£ç†æ²¡æœ‰è¿”å›å€¼,éƒ½æ˜¯void
 template<typename... ParamsType>
 class MulticasDelegate
 {
@@ -261,9 +261,9 @@ public:
 		return false;
 	}
 
-	//Ê¹ÓÃDelegateµÄ°ó¶¨º¯Êı½øĞĞµ¥¸ö´úÀíµÄ°ó¶¨
+	//ä½¿ç”¨Delegateçš„ç»‘å®šå‡½æ•°è¿›è¡Œå•ä¸ªä»£ç†çš„ç»‘å®š
 
-	//°ó¶¨ÀàµÄ³ÉÔ±º¯Êı
+	//ç»‘å®šç±»çš„æˆå‘˜å‡½æ•°
 	template<class C, typename... Payload>
 	inline void AddMember(C* pObject, void(C::* FuncPtr)(ParamsType..., Payload...), Payload...payload)
 	{
@@ -271,7 +271,7 @@ public:
 		delegate.BindMember(pObject, FuncPtr, payload...);
 		DelegateList.emplace_back(delegate);
 	}
-	//°ó¶¨ÀàµÄ¾²Ì¬º¯ÊıºÍÈ«¾Öº¯Êı
+	//ç»‘å®šç±»çš„é™æ€å‡½æ•°å’Œå…¨å±€å‡½æ•°
 	template<typename... Payload>
 	inline void AddStatic(void(*FuncPtr)(ParamsType..., Payload...), Payload...payload)
 	{
@@ -280,7 +280,7 @@ public:
 		DelegateList.emplace_back(delegate);
 	}
 
-	//°ó¶¨Lambda±í´ïÊ½
+	//ç»‘å®šLambdaè¡¨è¾¾å¼
 	template<class TLambda, typename... Payload>
 	inline void AddLambda(TLambda Lambda, Payload... payload)
 	{
@@ -289,7 +289,7 @@ public:
 		DelegateList.emplace_back(delegate);
 	}
 
-	//¹ã²¥,Ë³ĞòÖ´ĞĞ
+	//å¹¿æ’­,é¡ºåºæ‰§è¡Œ
 	inline void Broadcast(ParamsType... args)
 	{
 		for (auto myDelegate : DelegateList)
@@ -298,5 +298,5 @@ public:
 		}
 	}
 private:
-	std::vector<Delegate<void, ParamsType...>> DelegateList; //´úÀíÊı×é
+	std::vector<Delegate<void, ParamsType...>> DelegateList; //ä»£ç†æ•°ç»„
 };

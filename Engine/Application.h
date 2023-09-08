@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include <windows.h>
 #include <d3d12.h>
 #pragma comment(lib, "d3d12.lib")
@@ -33,7 +33,9 @@ public:
 	bool InitDirectX();
 	bool Run();
 
-	LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam); //ÏûÏ¢´¦Àíº¯Êı
+	void CreateCommandObject(D3D12_COMMAND_LIST_TYPE CommandListType);
+
+	LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam); //æ¶ˆæ¯å¤„ç†å‡½æ•°
 
 	HWND m_hWnd;
 	HINSTANCE hInstance;
@@ -50,9 +52,9 @@ private:
 
 	void CalculateFrameState();
 
-	class GameTime* gameTime = nullptr; //¼ÆÊ±Àà
-	int mFrameCount = 0; //×ÜÖ¡Êı
-	double timeElapsed = 0.f; //Á÷ÊÅµÄÊ±¼ä
+	class GameTime* gameTime = nullptr; //è®¡æ—¶ç±»
+	int mFrameCount = 0; //æ€»å¸§æ•°
+	double timeElapsed = 0.f; //æµé€çš„æ—¶é—´
 
 
 	//D3D12
