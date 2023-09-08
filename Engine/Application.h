@@ -15,11 +15,16 @@ using Microsoft::WRL::ComPtr;
 
 struct CommandFrame
 {
-	ID3D12CommandAllocator* pCommandAllocator = { nullptr };
-
-	void Wait()
+	ID3D12CommandAllocator* pCommandAllocator { nullptr };
+	uint64_t fenceValue { 0 };
+	void Wait(HANDLE fenceEvent, ID3D12Fence* fence)
 	{
-
+		assert(fence && fenceEvent);
+		if (fence->GetCompletedValue() < fenceValue)
+		{
+			DXCall(fence->SetEventOnCompletion(fenceValue, fenceEvent));
+			WaitForSingleObject(fenceEvent, INFINITE);
+		}
 	}
 };
 
@@ -32,8 +37,12 @@ public:
 	bool InitWindow(HINSTANCE hInstance);
 	bool InitDirectX();
 	bool Run();
+	void Render();
 
 	void CreateCommandObject(D3D12_COMMAND_LIST_TYPE CommandListType);
+	void BeginFrame();
+	void EndFrame();
+
 
 	LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam); //消息处理函数
 
@@ -59,12 +68,17 @@ private:
 
 	//D3D12
 	IDXGIFactory7* pDXGIFactory;
-	IDXGIAdapter4* pAdapter = { nullptr };
+	IDXGIAdapter4* pAdapter{ nullptr };
 	ID3D12Device* pDevice;
 
-	uint32_t frame_index = { 0 };
-	ID3D12CommandQueue* pCommandQueue = { nullptr };
+	uint32_t frame_index{ 0 };
+	ID3D12CommandQueue* pCommandQueue{ nullptr };
 	CommandFrame command_frame[Engine::frame_buffer_count]{ nullptr };
-	ID3D12GraphicsCommandList6* pCommandList = { nullptr };
+	ID3D12GraphicsCommandList6* pCommandList{ nullptr };
+
+	ID3D12Fence* pFence{ nullptr };
+	uint64_t fenceValue{ 0 };
+
+	HANDLE fenceEvent { nullptr };
 };
 

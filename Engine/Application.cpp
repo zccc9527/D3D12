@@ -69,10 +69,22 @@ bool Application::Run()
 				gameTime->Tick();
 				CalculateFrameState();
 			}
+			Render();
 		}
 	}
 
 	return (int)msg.wParam;
+}
+
+void Application::Render()
+{
+	//等待CPU和GPU同步，重置命令列表和命令分配器
+	BeginFrame();
+
+	//Draw
+
+	//向GPU提交命令列表
+	EndFrame();
 }
 
 void Application::CreateCommandObject(D3D12_COMMAND_LIST_TYPE CommandListType)
@@ -106,6 +118,40 @@ void Application::CreateCommandObject(D3D12_COMMAND_LIST_TYPE CommandListType)
 
 	//首先需要重置命令列表，因为在第一次引用命令列表时需要对它进行重置，而重置前必须先关闭
 	DXCall(pCommandList->Close());
+
+	//创建围栏
+	DXCall(pDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&pFence)));
+	NAME_D3D12_OBJECT(pFence, L"D3D12 Fence")
+
+	fenceEvent = CreateEventEx(nullptr, nullptr, 0, EVENT_ALL_ACCESS);
+	assert(fenceEvent);
+}
+
+void Application::BeginFrame()
+{
+	CommandFrame& frame = { command_frame[frame_index] };
+	frame.Wait(fenceEvent, pFence);
+	DXCall(frame.pCommandAllocator->Reset());
+	DXCall(pCommandList->Reset(frame.pCommandAllocator, nullptr));
+}
+
+void Application::EndFrame()
+{
+	//完成命令的记录关闭命令列表
+	DXCall(pCommandList->Close());
+
+	// 添加命令列表到队列中并执行。
+	ID3D12CommandList* commandLists[] = { pCommandList };//声明并定义命令列表数组
+	pCommandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);//将命令从命令列表传至命令队列
+
+	uint64_t& value { fenceValue };
+	value++;
+	CommandFrame& frame {command_frame[frame_index]};
+	frame.fenceValue = value;
+	pCommandQueue->Signal(pFence, value);
+
+	//下一个frame buffer
+	frame_index = (frame_index + 1) % Engine::frame_buffer_count;
 }
 
 LRESULT CALLBACK MainWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
